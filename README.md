@@ -4,22 +4,27 @@ RPi Pico firmware that exposes a single board as **two independent USB HID gamep
 
 ## Pin mapping
 
-| GP | P1 function | GP | P2 function |
-|----|-------------|----|-------------|
-| 0  | Start       | 11 | Start       |
-| 1  | Right       | 12 | Right       |
-| 2  | Left        | 13 | Left        |
-| 3  | Up          | 14 | Up          |
-| 4  | Down        | 15 | Down        |
-| 5  | Button 1    | 16 | Button 1    |
-| 6  | Button 2    | 17 | Button 2    |
-| 7  | Button 3    | 18 | Button 3    |
-| 8  | Button 4    | 19 | Button 4    |
-| 9  | Button 5    | 20 | Button 5    |
-| 10 | Button 6    | 21 | Button 6    |
+Pins are the same for both players, offset by 11. Active-low (internal pull-ups; short to GND to press).
 
-All inputs are **active-low** (pulled up internally; short to GND to press).  
-The joystick is rotated 90° CCW to match a Vewlix-style layout.
+| P1 GP | P2 GP | Input | XInput output |
+|-------|-------|-------|---------------|
+| 0  | 11 | Start    | Start |
+| 1  | 12 | Up       | Left stick up |
+| 2  | 13 | Down     | Left stick down |
+| 3  | 14 | Left     | Left stick left |
+| 4  | 15 | Right    | Left stick right |
+| 5  | 16 | Top row, left   | X |
+| 6  | 17 | Top row, middle | Y |
+| 7  | 18 | Top row, right  | RB |
+| 8  | 19 | Bottom row, left   | A |
+| 9  | 20 | Bottom row, middle | B |
+| 10 | 21 | Bottom row, right  | RT |
+
+The board enumerates as two Xbox 360 (XInput) controllers.
+
+## Bootloader
+
+Hold **either Start button** while plugging in the USB cable and the board boots into the RP2040 USB bootloader (BOOTSEL drive), no need to touch the Pico.
 
 ## Build
 
