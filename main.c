@@ -3,7 +3,6 @@
 #include "bsp/board.h"
 #include "tusb.h"
 #include "pico/bootrom.h"
-#include "xinput_driver.h"
 
 #define NUM_PINS 22
 #define P1_BASE_PIN 0
@@ -41,26 +40,42 @@ void subpoll_inputs(void) {
     }
 }
 
+typedef struct __attribute__((packed)) {
+    uint16_t buttons;
+    int8_t x;
+    int8_t y;
+} gamepad_report_t;
+
+// HID button bits, laid out like an Xbox pad (SDL/Windows button order)
+#define BTN_A     (1u << 0)
+#define BTN_B     (1u << 1)
+#define BTN_X     (1u << 2)
+#define BTN_Y     (1u << 3)
+#define BTN_RB    (1u << 5)
+#define BTN_START (1u << 7)
+#define BTN_RT    (1u << 9)  // digital button, not an analog trigger
+
 // Per-player pin offsets: 0 Start, 1 Up, 2 Down, 3 Left, 4 Right, 5..10 buttons 1..6
 // Top row (5,6,7) = X, Y, RB.  Bottom row (8,9,10) = A, B, RT.
-static void build_report(uint8_t base_pin, xinput_report_t *rpt) {
-    xinput_report_init(rpt);
+static gamepad_report_t build_report(uint8_t base_pin) {
+    gamepad_report_t rpt = {0};
     uint32_t s = debounced_state >> base_pin;
 
-    if (s & (1u << 0)) rpt->buttons |= XINPUT_START;
+    if (s & (1u << 0)) rpt.buttons |= BTN_START;
 
-    // Joystick -> left analog stick (XInput +Y is up)
-    if (s & (1u << 1)) rpt->ly =  32767; // Up
-    if (s & (1u << 2)) rpt->ly = -32768; // Down
-    if (s & (1u << 3)) rpt->lx = -32768; // Left
-    if (s & (1u << 4)) rpt->lx =  32767; // Right
+    // Joystick -> X/Y axes (HID +Y is down)
+    if (s & (1u << 1)) rpt.y = -127; // Up
+    if (s & (1u << 2)) rpt.y =  127; // Down
+    if (s & (1u << 3)) rpt.x = -127; // Left
+    if (s & (1u << 4)) rpt.x =  127; // Right
 
-    if (s & (1u << 5))  rpt->buttons |= XINPUT_X;
-    if (s & (1u << 6))  rpt->buttons |= XINPUT_Y;
-    if (s & (1u << 7))  rpt->buttons |= XINPUT_RB;
-    if (s & (1u << 8))  rpt->buttons |= XINPUT_A;
-    if (s & (1u << 9))  rpt->buttons |= XINPUT_B;
-    if (s & (1u << 10)) rpt->rt = 255;
+    if (s & (1u << 5))  rpt.buttons |= BTN_X;
+    if (s & (1u << 6))  rpt.buttons |= BTN_Y;
+    if (s & (1u << 7))  rpt.buttons |= BTN_RB;
+    if (s & (1u << 8))  rpt.buttons |= BTN_A;
+    if (s & (1u << 9))  rpt.buttons |= BTN_B;
+    if (s & (1u << 10)) rpt.buttons |= BTN_RT;
+    return rpt;
 }
 
 int main(void) {
@@ -75,24 +90,30 @@ int main(void) {
 
     tusb_init();
 
-    xinput_report_t last[XINPUT_NUM_PLAYERS];
-    xinput_report_t cur[XINPUT_NUM_PLAYERS];
-    const uint8_t base[XINPUT_NUM_PLAYERS] = { P1_BASE_PIN, P2_BASE_PIN };
-    for (int i = 0; i < XINPUT_NUM_PLAYERS; i++) {
-        xinput_report_init(&last[i]);
-        last[i].report_id = 0xFF; // force an initial send
-    }
+    gamepad_report_t last[2] = { {0xFFFF, 0, 0}, {0xFFFF, 0, 0} };
+    const uint8_t base[2] = { P1_BASE_PIN, P2_BASE_PIN };
 
     while (1) {
-        // Sub-poll continuously
         subpoll_inputs();
         tud_task();
 
-        for (uint8_t i = 0; i < XINPUT_NUM_PLAYERS; i++) {
-            build_report(base[i], &cur[i]);
-            if (memcmp(&cur[i], &last[i], sizeof(cur[i])) != 0 && xinput_send(i, &cur[i])) {
-                last[i] = cur[i];
+        for (uint8_t i = 0; i < 2; i++) {
+            if (!tud_hid_n_ready(i)) continue;
+            gamepad_report_t cur = build_report(base[i]);
+            if (memcmp(&cur, &last[i], sizeof(cur)) != 0) {
+                tud_hid_n_report(i, 0, &cur, sizeof(cur));
+                last[i] = cur;
             }
         }
     }
+}
+
+// Required TinyUSB HID callbacks
+uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) {
+    (void) itf; (void) report_id; (void) report_type; (void) buffer; (void) reqlen;
+    return 0;
+}
+
+void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize) {
+    (void) itf; (void) report_id; (void) report_type; (void) buffer; (void) bufsize;
 }

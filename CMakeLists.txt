@@ -10,7 +10,6 @@ pico_sdk_init()
 add_executable(dual_arcade_gamepad
     main.c
     usb_descriptors.c
-    xinput_driver.c
 )
 
 target_include_directories(dual_arcade_gamepad PRIVATE ${CMAKE_CURRENT_LIST_DIR})

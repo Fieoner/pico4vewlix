@@ -6,21 +6,21 @@ RPi Pico firmware that exposes a single board as **two independent USB HID gamep
 
 Pins are the same for both players, offset by 11. Active-low (internal pull-ups; short to GND to press).
 
-| P1 GP | P2 GP | Input | XInput output |
-|-------|-------|-------|---------------|
-| 0  | 11 | Start    | Start |
-| 1  | 12 | Up       | Left stick up |
-| 2  | 13 | Down     | Left stick down |
-| 3  | 14 | Left     | Left stick left |
-| 4  | 15 | Right    | Left stick right |
-| 5  | 16 | Top row, left   | X |
-| 6  | 17 | Top row, middle | Y |
-| 7  | 18 | Top row, right  | RB |
-| 8  | 19 | Bottom row, left   | A |
-| 9  | 20 | Bottom row, middle | B |
-| 10 | 21 | Bottom row, right  | RT |
+| P1 GP | P2 GP | Input | HID output |
+|-------|-------|-------|------------|
+| 0  | 11 | Start    | Button 8 |
+| 1  | 12 | Up       | Y axis up |
+| 2  | 13 | Down     | Y axis down |
+| 3  | 14 | Left     | X axis left |
+| 4  | 15 | Right    | X axis right |
+| 5  | 16 | Top row, left   | Button 3 (Xbox X) |
+| 6  | 17 | Top row, middle | Button 4 (Xbox Y) |
+| 7  | 18 | Top row, right  | Button 6 (Xbox RB) |
+| 8  | 19 | Bottom row, left   | Button 1 (Xbox A) |
+| 9  | 20 | Bottom row, middle | Button 2 (Xbox B) |
+| 10 | 21 | Bottom row, right  | Button 10 (digital, in place of RT) |
 
-The board enumerates as two Xbox 360 (XInput) controllers.
+The board enumerates as two plain HID gamepads (DirectInput/SDL). Buttons follow the Xbox layout, but RT is a regular button rather than an analog trigger, so frontends that ignore trigger axes still see it.
 
 ## Bootloader
 
